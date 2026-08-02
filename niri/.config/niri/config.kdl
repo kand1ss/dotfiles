@@ -1,0 +1,419 @@
+// ============================================================================
+// niri window manager configuration
+// ============================================================================
+
+// Disable client-side decorations (CSD) globally where the client honors it.
+// Keeps title bars/borders consistent and managed by niri instead of each app.
+prefer-no-csd
+
+// Global environment variables injected into the compositor session.
+environment {
+    // Forces Qt apps to use qt5ct for theming instead of native Qt styling.
+    // Needed to keep GTK/Qt app appearance consistent under a non-DE Wayland session.
+    QT_QPA_PLATFORMTHEME "qt5ct"
+}
+
+input {
+    keyboard {
+        xkb {
+            // Two keyboard layouts: US and Russian.
+            layout "us,ru"
+            // Alt+Shift toggles between the two layouts.
+            options "grp:alt_shift_toggle"
+        }
+
+        // Enables Num Lock on session start.
+        numlock
+    }
+
+    touchpad {
+        // Tap-to-click enabled.
+        tap
+        // Natural (reversed) scrolling direction, matching trackpad conventions
+        // on macOS/most modern laptops.
+        natural-scroll
+    }
+
+    // Focus follows mouse cursor movement.
+    // max-scroll-amount="0%" disables the additional "scroll to follow" behavior,
+    // i.e. focus changes on hover but the view doesn't auto-scroll to reveal windows.
+    focus-follows-mouse max-scroll-amount="0%"
+}
+
+// --- Output configuration -------------------------------------------------
+// NOTE: `position x=1280 y=0` only matters if there is a second monitor placed
+// to the left of this one. On a single-output laptop setup this has no visible
+// effect, but it's worth removing if there is in fact only one display, to avoid
+// confusion when revisiting this config later.
+output "eDP-1" {
+    // Native laptop panel resolution and refresh rate.
+    mode "1366x768@60.000"
+    // Fractional scale factor. NOTE: non-integer/non-standard scale values
+    // (0.95 here) force niri to downscale-render, which can visibly blur text
+    // on low-DPI panels. Consider 1.0 or 1.25 and compare text sharpness.
+    scale 1
+    transform "normal"
+}
+
+// ============================================================================
+// Workspace structure
+// Static, named workspaces so each app role always lands in a predictable
+// place after a session restart, instead of relying on dynamic workspace
+// creation order (which shifts depending on what you open first).
+//
+// Numeric binds (Mod+1..9 below) still work — niri assigns workspace numbers
+// by declaration order, so workspace "term" below IS workspace 1, etc.
+// ============================================================================
+workspace "term" {
+    // Terminal work. Kept as workspace 1 for muscle-memory (Mod+1).
+}
+
+workspace "web" {
+    // Browser.
+}
+
+workspace "code" {
+    // VSCode.
+}
+
+workspace "chat" {
+    // Telegram + Slack (once added), grouped as tabs in one column via
+    // Mod+W (toggle-column-tabbed-display) rather than split across
+    // separate workspaces — these are narrow, sidebar-style apps that
+    // don't need a full-width column each.
+}
+
+layout {
+    // Gap (in logical px) between windows/columns.
+    gaps 8
+
+    // If only a single column is present on the workspace, keep it centered
+    // instead of pinned to the left edge.
+    always-center-single-column
+    // Never auto-center the focused column when multiple columns are visible.
+    center-focused-column "never"
+
+    // Cycle targets for Mod+R / Mod+Shift+R (switch-preset-column-width).
+    preset-column-widths {
+        proportion 0.33333
+        proportion 0.5
+        proportion 0.66667
+    }
+
+    // Default width for newly opened columns: 50% of the available width.
+    default-column-width { proportion 0.5; }
+
+    focus-ring {
+        width 2
+        active-color "#7aa2f7"     // Tokyo Night blue accent
+        inactive-color "#1f2335"   // Tokyo Night dark background shade
+    }
+
+    shadow {
+        off
+
+        // Blur radius of the drop shadow.
+        softness 50
+
+        // How far the shadow extends beyond the window edges.
+        spread 5
+
+        // Shadow offset relative to the window (x, y in logical px).
+        offset x=0 y=5
+
+        // Shadow color, including alpha (last hex pair = opacity).
+        color "#0007"
+    }
+}
+
+// Starts the "noctalia" shell (bar/notification daemon, etc.) on compositor launch.
+spawn-at-startup "noctalia"
+
+hotkey-overlay {
+    // Uncomment to suppress the "Important Hotkeys" popup that normally
+    // appears once per session on startup.
+    // skip-at-startup
+}
+
+// Directory + filename pattern for Print-key screenshots.
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+// --- Animations -------------------------------------------------------------
+animations {
+    // Uncomment to disable all animations entirely.
+    // off
+
+    // Global animation speed multiplier. Values <1.0 speed animations up;
+    // values >1.0 slow them down.
+    // slowdown 3.0
+}
+
+// --- Per-application window rules -------------------------------------------
+
+// Firefox's picture-in-picture popup window should float instead of tiling.
+window-rule {
+    match app-id=r#"firefox$"# title="^Picture-in-Picture$"
+    open-floating true
+}
+
+// Global rule applied to all windows: rounded corners with clipping,
+// plus a placeholder (currently commented out) for a translucency/blur effect.
+window-rule {
+    geometry-corner-radius 12
+    clip-to-geometry true
+
+    // >>> BLUR (disabled)
+    // opacity 0.75
+    // background-effect {
+      // blur true
+      // saturation 3
+    // }
+}
+
+// --- App-to-workspace routing -----------------------------------------------
+// NOTE: verify these app-id values on your system before relying on them.
+// Run `niri msg windows` while the app is focused/open to read its exact
+// app_id, then adjust the regex below if it doesn't match.
+
+window-rule {
+    match app-id="foot"
+    open-on-workspace "term"
+}
+
+window-rule {
+    match app-id="brave-browser"
+    match app-id="firefox"
+    match app-id="qutebrowser"
+    open-on-workspace "web"
+}
+
+window-rule {
+    match app-id=r#"^code$"#
+    match app-id="codium"
+    match app-id="Postman"
+    open-on-workspace "code"
+    open-maximized true
+}
+
+window-rule {
+    match app-id="org.telegram.desktop"
+    open-on-workspace "chat"
+}
+
+// ============================================================================
+// Keybindings
+// "Mod" resolves to the Super/Windows key by default in niri.
+// ============================================================================
+binds {
+    // Shows the important-hotkeys overlay popup on demand.
+    Mod+Shift+Slash { show-hotkey-overlay; }
+
+    Mod+T hotkey-overlay-title="Open a Terminal" { spawn "foot"; }
+    Mod+D hotkey-overlay-title="Run a Launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+B { spawn "firefox"; }
+    Mod+Shift+B { spawn "qutebrowser"; }
+    Mod+C { spawn "codium"; }
+    Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
+
+    // --- Media / hardware keys ---
+    // allow-when-locked=true lets these fire even while the screen is locked
+    // (volume/brightness/media control shouldn't require unlocking first).
+    XF86AudioRaiseVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1+ -l 1.0"; }
+    XF86AudioLowerVolume allow-when-locked=true { spawn-sh "wpctl set-volume @DEFAULT_AUDIO_SINK@ 0.1-"; }
+    XF86AudioMute        allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle"; }
+    XF86AudioMicMute     allow-when-locked=true { spawn-sh "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle"; }
+
+    XF86AudioPlay        allow-when-locked=true { spawn-sh "playerctl play-pause"; }
+    XF86AudioStop        allow-when-locked=true { spawn-sh "playerctl stop"; }
+    XF86AudioPrev        allow-when-locked=true { spawn-sh "playerctl previous"; }
+    XF86AudioNext        allow-when-locked=true { spawn-sh "playerctl next"; }
+
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "+10%"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "brightnessctl" "--class=backlight" "set" "10%-"; }
+
+    // --- Overview / window management ---
+    Mod+Space repeat=false { toggle-overview; }
+    Mod+Q repeat=false { close-window; }
+
+    // --- Focus movement: arrow keys and Vim-style h/j/k/l (duplicated on purpose) ---
+    Mod+Left  { focus-column-left; }
+    Mod+Down  { focus-window-down; }
+    Mod+Up    { focus-window-up; }
+    Mod+Right { focus-column-right; }
+    Mod+H     { focus-column-left; }
+    Mod+J     { focus-window-down; }
+    Mod+K     { focus-window-up; }
+    Mod+L     { focus-column-right; }
+
+    // --- Move focused window/column: arrow keys and Vim-style, mirrored with Ctrl ---
+    Mod+Ctrl+Left  { move-column-left; }
+    Mod+Ctrl+Down  { move-window-down; }
+    Mod+Ctrl+Up    { move-window-up; }
+    Mod+Ctrl+Right { move-column-right; }
+    Mod+Ctrl+H     { move-column-left; }
+    Mod+Ctrl+J     { move-window-down; }
+    Mod+Ctrl+K     { move-window-up; }
+    Mod+Ctrl+L     { move-column-right; }
+
+    // --- Jump to first/last column ---
+    Mod+Home { focus-column-first; }
+    Mod+End  { focus-column-last; }
+    Mod+Ctrl+Home { move-column-to-first; }
+    Mod+Ctrl+End  { move-column-to-last; }
+
+    // --- Multi-monitor focus/move (no-ops on a single-output setup) ---
+    Mod+Shift+Left  { focus-monitor-left; }
+    Mod+Shift+Down  { focus-monitor-down; }
+    Mod+Shift+Up    { focus-monitor-up; }
+    Mod+Shift+Right { focus-monitor-right; }
+    Mod+Shift+H     { focus-monitor-left; }
+    Mod+Shift+J     { focus-monitor-down; }
+    Mod+Shift+K     { focus-monitor-up; }
+    Mod+Shift+L     { focus-monitor-right; }
+
+    Mod+Shift+Ctrl+Left  { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+Down  { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+Up    { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+Right { move-column-to-monitor-right; }
+    Mod+Shift+Ctrl+H     { move-column-to-monitor-left; }
+    Mod+Shift+Ctrl+J     { move-column-to-monitor-down; }
+    Mod+Shift+Ctrl+K     { move-column-to-monitor-up; }
+    Mod+Shift+Ctrl+L     { move-column-to-monitor-right; }
+
+    // --- Workspace navigation (Page Up/Down and U/I as Vim-style alternatives) ---
+    Mod+Page_Down      { focus-workspace-down; }
+    Mod+Page_Up        { focus-workspace-up; }
+    Mod+U              { focus-workspace-down; }
+    Mod+I              { focus-workspace-up; }
+    Mod+Ctrl+Page_Down { move-column-to-workspace-down; }
+    Mod+Ctrl+Page_Up   { move-column-to-workspace-up; }
+    Mod+Ctrl+U         { move-column-to-workspace-down; }
+    Mod+Ctrl+I         { move-column-to-workspace-up; }
+
+    // --- Reorder workspaces themselves ---
+    Mod+Shift+Page_Down { move-workspace-down; }
+    Mod+Shift+Page_Up   { move-workspace-up; }
+    Mod+Shift+U         { move-workspace-down; }
+    Mod+Shift+I         { move-workspace-up; }
+
+    // --- Mouse wheel workspace/column navigation ---
+    // cooldown-ms debounces rapid wheel events so one physical scroll notch
+    // doesn't skip multiple workspaces.
+    Mod+WheelScrollDown      cooldown-ms=150 { focus-workspace-down; }
+    Mod+WheelScrollUp        cooldown-ms=150 { focus-workspace-up; }
+    Mod+Ctrl+WheelScrollDown cooldown-ms=150 { move-column-to-workspace-down; }
+    Mod+Ctrl+WheelScrollUp   cooldown-ms=150 { move-column-to-workspace-up; }
+
+    Mod+WheelScrollRight      { focus-column-right; }
+    Mod+WheelScrollLeft       { focus-column-left; }
+    Mod+Ctrl+WheelScrollRight { move-column-right; }
+    Mod+Ctrl+WheelScrollLeft  { move-column-left; }
+
+    Mod+Shift+WheelScrollDown      { focus-column-right; }
+    Mod+Shift+WheelScrollUp        { focus-column-left; }
+    Mod+Ctrl+Shift+WheelScrollDown { move-column-right; }
+    Mod+Ctrl+Shift+WheelScrollUp   { move-column-left; }
+
+    // --- Direct workspace access by number (1-9) ---
+    Mod+1 { focus-workspace 1; }
+    Mod+2 { focus-workspace 2; }
+    Mod+3 { focus-workspace 3; }
+    Mod+4 { focus-workspace 4; }
+    Mod+5 { focus-workspace 5; }
+    Mod+6 { focus-workspace 6; }
+    Mod+7 { focus-workspace 7; }
+    Mod+8 { focus-workspace 8; }
+    Mod+9 { focus-workspace 9; }
+    Mod+Ctrl+1 { move-column-to-workspace 1; }
+    Mod+Ctrl+2 { move-column-to-workspace 2; }
+    Mod+Ctrl+3 { move-column-to-workspace 3; }
+    Mod+Ctrl+4 { move-column-to-workspace 4; }
+    Mod+Ctrl+5 { move-column-to-workspace 5; }
+    Mod+Ctrl+6 { move-column-to-workspace 6; }
+    Mod+Ctrl+7 { move-column-to-workspace 7; }
+    Mod+Ctrl+8 { move-column-to-workspace 8; }
+    Mod+Ctrl+9 { move-column-to-workspace 9; }
+
+    // Move the focused window into/out of a column.
+    // If the window is standalone, it gets consumed into the adjacent column.
+    // If it's already in a column, it gets expelled into its own column.
+    Mod+BracketLeft  { consume-or-expel-window-left; }
+    Mod+BracketRight { consume-or-expel-window-right; }
+
+    // Pull the next window from the right into the bottom of the focused column.
+    Mod+Comma  { consume-window-into-column; }
+    // Pop the bottom window of the focused column out to its own column on the right.
+    Mod+Period { expel-window-from-column; }
+
+    // Cycle through the preset-column-widths defined in `layout`.
+    Mod+R { switch-preset-column-width; }
+    Mod+Shift+R { switch-preset-column-width-back; }
+
+    Mod+Ctrl+Shift+R { switch-preset-window-height; }
+    Mod+Ctrl+R { reset-window-height; }
+
+    // Maximize the column (keeps gaps/borders around it).
+    Mod+F { maximize-column; }
+    // True fullscreen (window, no gaps/borders).
+    Mod+Shift+F { fullscreen-window; }
+
+    // Maximize to screen edges — equivalent to double-clicking the titlebar
+    // to maximize in a traditional WM, but without the gaps maximize-column leaves.
+    Mod+M { maximize-window-to-edges; }
+
+    // Expand the focused column to fill whatever space isn't occupied by
+    // other fully-visible columns.
+    Mod+Ctrl+F { expand-column-to-available-width; }
+
+    // Center all fully-visible columns on screen.
+    Mod+Ctrl+C { center-visible-columns; }
+
+    // Fine-grained width adjustment (10% increments here).
+    // set-column-width also accepts absolute pixel values ("1000"),
+    // relative pixel deltas ("+5"/"-5"), or absolute percentages ("25%").
+    // Pixel values are logical (pre-scale) pixels.
+    Mod+Minus { set-column-width "-10%"; }
+    Mod+Equal { set-column-width "+10%"; }
+
+    // Fine-grained height adjustment for a window stacked with others in a column.
+    Mod+Shift+Minus { set-window-height "-10%"; }
+    Mod+Shift+Equal { set-window-height "+10%"; }
+
+    // Toggle the focused window between floating and tiling layout.
+    Mod+V       { toggle-window-floating; }
+    // Switch keyboard focus between the floating layer and the tiling layer.
+    Mod+Shift+V { switch-focus-between-floating-and-tiling; }
+
+    // Toggle "tabbed" display mode for the focused column: windows appear
+    // as vertical tabs instead of stacked vertically.
+    Mod+W { toggle-column-tabbed-display; }
+
+    // Layout-switching actions — intentionally left disabled here because
+    // the XKB "grp:alt_shift_toggle" option above already handles layout
+    // switching. Enabling both at once causes a double-switch on one keypress.
+    // Mod+Space       { switch-layout "next"; }
+    // Mod+Shift+Space { switch-layout "prev"; }
+
+    // --- Screenshots ---
+    Print { screenshot; }
+    Ctrl+Print { screenshot-screen; }
+    Alt+Print { screenshot-window; }
+
+    // Escape hatch: toggles whether niri intercepts its own keyboard shortcuts.
+    // Needed for remote-desktop clients / software KVMs that need to forward
+    // raw keypresses to a remote machine. allow-inhibiting=false ensures this
+    // bind itself always works, even while an inhibitor is active — otherwise
+    // a misbehaving app could permanently steal all keyboard shortcuts.
+    Mod+Escape allow-inhibiting=false { toggle-keyboard-shortcuts-inhibit; }
+
+    // Quit niri. Shows a confirmation dialog first — this is NOT an
+    // instant/unconfirmed exit.
+    Mod+Shift+E { quit; }
+    Ctrl+Alt+Delete { quit; }
+
+    // Powers off the monitor(s). Any input (mouse movement, keypress)
+    // wakes them back up.
+    Mod+Shift+P { power-off-monitors; }
+}
+
+include "noctalia.kdl"
