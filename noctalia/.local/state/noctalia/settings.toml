@@ -194,18 +194,6 @@ wallpaper_scheme = "soft"
     [theme.templates]
     builtin_ids = [ "foot" ]
 
-[wallpaper.automation]
-enabled = true
-
-[wallpaper.default]
-path = "/home/kand1ss/Pictures/Wallpapers/view-urban-dark-city-with-fog.jpg"
-
-[wallpaper.last]
-path = "/home/kand1ss/Pictures/Wallpapers/view-urban-dark-city-with-fog.jpg"
-
-[wallpaper.monitors.eDP-1]
-path = "/home/kand1ss/Pictures/Wallpapers/view-urban-dark-city-with-fog.jpg"
-
 [widget.active_window]
 capsule = true
 
