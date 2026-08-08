@@ -47,7 +47,7 @@ input {
 // confusion when revisiting this config later.
 output "eDP-1" {
     // Native laptop panel resolution and refresh rate.
-    mode "1366x768@60.000"
+    mode "1920x1080@60.000"
     // Fractional scale factor. NOTE: non-integer/non-standard scale values
     // (0.95 here) force niri to downscale-render, which can visibly blur text
     // on low-DPI panels. Consider 1.0 or 1.25 and compare text sharpness.
@@ -110,17 +110,14 @@ layout {
     }
 
     shadow {
-        off
-
+        on
         // Blur radius of the drop shadow.
         softness 50
 
         // How far the shadow extends beyond the window edges.
         spread 5
-
         // Shadow offset relative to the window (x, y in logical px).
         offset x=0 y=5
-
         // Shadow color, including alpha (last hex pair = opacity).
         color "#0007"
     }
@@ -162,12 +159,11 @@ window-rule {
     geometry-corner-radius 12
     clip-to-geometry true
 
-    // >>> BLUR (disabled)
-    // opacity 0.75
-    // background-effect {
-      // blur true
-      // saturation 3
-    // }
+    opacity 0.75
+    background-effect {
+      blur true
+      saturation 3
+    }
 }
 
 // --- App-to-workspace routing -----------------------------------------------
@@ -177,6 +173,7 @@ window-rule {
 
 window-rule {
     match app-id="foot"
+    match app-id="ghostty"
     open-on-workspace "term"
 }
 
@@ -191,6 +188,7 @@ window-rule {
     match app-id=r#"^code$"#
     match app-id="codium"
     match app-id="Postman"
+    match app-id=r#"(?i)^(com\.jetbrains\.|jetbrains-|(idea|pycharm|clion|webstorm|rider|goland|rubymine|phpstorm|datagrip|fleet|rustrover|aqua|dataspell))"#
     open-on-workspace "code"
     open-maximized true
 }
@@ -208,11 +206,9 @@ binds {
     // Shows the important-hotkeys overlay popup on demand.
     Mod+Shift+Slash { show-hotkey-overlay; }
 
-    Mod+T hotkey-overlay-title="Open a Terminal" { spawn "foot"; }
+    Mod+T hotkey-overlay-title="Open a Terminal" { spawn "ghostty"; }
     Mod+D hotkey-overlay-title="Run a Launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
     Mod+B { spawn "firefox"; }
-    Mod+Shift+B { spawn "qutebrowser"; }
-    Mod+C { spawn "codium"; }
     Super+Alt+L hotkey-overlay-title="Lock the Screen: swaylock" { spawn "swaylock"; }
 
     // --- Media / hardware keys ---
